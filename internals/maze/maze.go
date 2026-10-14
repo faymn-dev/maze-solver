@@ -4,17 +4,21 @@ import (
 	"math/rand"
 )
 
+var neighborOffsets = []*Point{NewPoint(-1, 0), NewPoint(1, 0), NewPoint(0, -1), NewPoint(0, 1)}
+
 type Cells [][]*Cell
 
 type Maze struct {
 	rand  *rand.Rand
 	cells Cells
+	path  []*Cell
 }
 
 func NewMaze(seed int64) *Maze {
 	maze := &Maze{
 		rand:  rand.New(rand.NewSource(seed)),
 		cells: createCells(),
+		path:  []*Cell{},
 	}
 
 	maze.breakWalls(0, 0)
@@ -31,7 +35,37 @@ func (m *Maze) Draw() {
 	}
 }
 
-var neighborOffsets = []*Point{NewPoint(-1, 0), NewPoint(1, 0), NewPoint(0, -1), NewPoint(0, 1)}
+func (m *Maze) Solve() []*Cell {
+	m.solveR(m.cells[0][0])
+	return m.path
+}
+
+func (m *Maze) solveR(cell *Cell) bool {
+	cell.visited = true
+
+	// base case: are you at the end?
+	if cell.id.x == NumCols-1 && cell.id.y == NumRows-1 {
+		m.path = append(m.path, cell)
+		return true
+	}
+
+	for _, offset := range neighborOffsets {
+		x := cell.id.x + offset.x
+		y := cell.id.y + offset.y
+
+		neighbor := m.getCell(x, y)
+		if neighbor != nil && !neighbor.visited && cell.CanGoTo(neighbor) {
+
+			result := m.solveR(neighbor)
+			if result {
+				m.path = append(m.path, cell)
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 func (m *Maze) resetVisited() {
 	for _, col := range m.cells {
@@ -51,7 +85,6 @@ func (m *Maze) breakWalls(i int32, j int32) {
 
 	for {
 		neighbors := []*Cell{}
-		neighborIDs := []*Point{}
 		for _, offset := range neighborOffsets {
 			x := i + offset.x
 			y := j + offset.y
@@ -59,7 +92,6 @@ func (m *Maze) breakWalls(i int32, j int32) {
 			neighbor := m.getCell(x, y)
 			if neighbor != nil && !neighbor.visited {
 				neighbors = append(neighbors, neighbor)
-				neighborIDs = append(neighborIDs, NewPoint(x, y))
 			}
 		}
 
@@ -67,30 +99,28 @@ func (m *Maze) breakWalls(i int32, j int32) {
 			return
 		}
 
-		neighborIdx := m.rand.Intn(len(neighbors))
-		neighbor := neighbors[neighborIdx]
-		neighborID := neighborIDs[neighborIdx]
+		neighbor := neighbors[m.rand.Intn(len(neighbors))]
 
 		// knock down walls between current cell and neighbor
-		if neighborID.x > i {
+		if neighbor.id.x > i {
 			// neighbor is to the right
 			cell.hasRightWall = false
 			neighbor.hasLeftWall = false
-		} else if neighborID.x < i {
+		} else if neighbor.id.x < i {
 			// neighbor is to the left
 			cell.hasLeftWall = false
 			neighbor.hasRightWall = false
-		} else if neighborID.y > j {
+		} else if neighbor.id.y > j {
 			// neighbor is to the bottom
 			cell.hasBottomWall = false
 			neighbor.hasTopWall = false
-		} else if neighborID.y < j {
+		} else if neighbor.id.y < j {
 			// neighbor is to the top
 			cell.hasTopWall = false
 			neighbor.hasBottomWall = false
 		}
 
-		m.breakWalls(neighborID.x, neighborID.y)
+		m.breakWalls(neighbor.id.x, neighbor.id.y)
 	}
 }
 
@@ -111,12 +141,15 @@ func createCells() Cells {
 		cells[i] = make([]*Cell, NumRows)
 
 		for j := range NumRows {
-			cells[i][j] = NewCell(NewPoint(
+			cells[i][j] = NewCell(
 				// translate grid to the center
 				// we add CellSize/2 because cells are drawn from the center, not the top left
-				int32(i*CellSize+ScreenWidth/2-mazeWidth/2+CellSize/2),
-				int32(j*CellSize+ScreenHeight/2-mazeHeight/2+CellSize/2),
-			))
+				NewPoint(
+					int32(i*CellSize+ScreenWidth/2-mazeWidth/2+CellSize/2),
+					int32(j*CellSize+ScreenHeight/2-mazeHeight/2+CellSize/2),
+				),
+				NewPoint(int32(i), int32(j)),
+			)
 		}
 	}
 

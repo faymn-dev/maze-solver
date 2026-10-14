@@ -9,15 +9,17 @@ type Cell struct {
 	hasBottomWall bool
 	center        *Point
 	visited       bool
+	id            *Point
 }
 
-func NewCell(center *Point) *Cell {
+func NewCell(center *Point, id *Point) *Cell {
 	return &Cell{
 		hasLeftWall:   true,
 		hasRightWall:  true,
 		hasTopWall:    true,
 		hasBottomWall: true,
 		center:        center,
+		id:            id,
 	}
 }
 
@@ -41,10 +43,28 @@ func (c *Cell) Draw() {
 	}
 }
 
-func (c *Cell) DrawMove(toCell *Cell, undo bool) {
+func (c *Cell) DrawMove(neighbor *Cell, undo bool) {
 	color := rl.Red
 	if undo {
 		color = rl.LightGray
 	}
-	NewLine(c.center, toCell.center).Draw(color)
+	NewLine(c.center, neighbor.center).Draw(color)
+}
+
+func (c *Cell) CanGoTo(neighbor *Cell) bool {
+	if neighbor.id.x > c.id.x {
+		// neighbor is to the right
+		return !c.hasRightWall && !neighbor.hasLeftWall
+	} else if neighbor.id.x < c.id.x {
+		// neighbor is to the left
+		return !c.hasLeftWall && !neighbor.hasRightWall
+	} else if neighbor.id.y > c.id.y {
+		// neighbor is to the bottom
+		return !c.hasBottomWall && !neighbor.hasTopWall
+	} else if neighbor.id.y < c.id.y {
+		// neighbor is to the top
+		return !c.hasTopWall && !neighbor.hasBottomWall
+	}
+
+	return false
 }

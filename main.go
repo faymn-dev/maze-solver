@@ -11,12 +11,19 @@ func main() {
 
 	maze := maze.NewMaze(42)
 
+	path := maze.Solve()
+
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.White)
 
 		maze.Draw()
+		for i := range len(path) - 1 {
+			cell := path[i]
+			nextCell := path[i+1]
+			cell.DrawMove(nextCell, false)
+		}
 
 		rl.EndDrawing()
 	}
