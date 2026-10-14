@@ -43,12 +43,8 @@ func (c *Cell) Draw() {
 	}
 }
 
-func (c *Cell) DrawMove(neighbor *Cell, undo bool) {
-	color := rl.Red
-	if undo {
-		color = rl.LightGray
-	}
-	NewLine(c.center, neighbor.center).Draw(color)
+func (c *Cell) DrawMove(neighbor *Cell) {
+	NewLine(c.center, neighbor.center).Draw(rl.Red)
 }
 
 func (c *Cell) CanGoTo(neighbor *Cell) bool {

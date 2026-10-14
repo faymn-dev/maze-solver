@@ -19,26 +19,30 @@ func main() {
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
-		rl.ClearBackground(rl.White)
+		rl.ClearBackground(rl.RayWhite)
 
 		timer += rl.GetFrameTime()
-		if timer > 0.01 {
+		if timer > 0.005 {
 			currentLine = min(currentLine+1, len(explored))
 			timer = 0
 		}
 
 		maze.Draw()
 
-		// if "finished" exploring, then draw path
 		if currentLine == len(explored) {
+			for i := range currentLine {
+				explored[i].Draw(rl.LightGray)
+			}
+
+			// if "finished" exploring, then draw path
 			for i := range len(path) - 1 {
 				cell := path[i]
 				nextCell := path[i+1]
-				cell.DrawMove(nextCell, false)
+				cell.DrawMove(nextCell)
 			}
 		} else {
 			for i := range currentLine {
-				explored[i].Draw(rl.LightGray)
+				explored[i].Draw(rl.Gray)
 			}
 		}
 
