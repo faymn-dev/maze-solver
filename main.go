@@ -11,18 +11,35 @@ func main() {
 
 	maze := maze.NewMaze(42)
 
-	path := maze.Solve()
+	path, explored := maze.Solve()
+
+	var timer float32 = 0
+	currentLine := 0
 
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.White)
 
+		timer += rl.GetFrameTime()
+		if timer > 0.01 {
+			currentLine = min(currentLine+1, len(explored))
+			timer = 0
+		}
+
 		maze.Draw()
-		for i := range len(path) - 1 {
-			cell := path[i]
-			nextCell := path[i+1]
-			cell.DrawMove(nextCell, false)
+
+		// if "finished" exploring, then draw path
+		if currentLine == len(explored) {
+			for i := range len(path) - 1 {
+				cell := path[i]
+				nextCell := path[i+1]
+				cell.DrawMove(nextCell, false)
+			}
+		} else {
+			for i := range currentLine {
+				explored[i].Draw(rl.LightGray)
+			}
 		}
 
 		rl.EndDrawing()

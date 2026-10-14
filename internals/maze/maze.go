@@ -9,16 +9,16 @@ var neighborOffsets = []*Point{NewPoint(-1, 0), NewPoint(1, 0), NewPoint(0, -1),
 type Cells [][]*Cell
 
 type Maze struct {
-	rand  *rand.Rand
-	cells Cells
-	path  []*Cell
+	rand     *rand.Rand
+	cells    Cells
+	path     []*Cell
+	explored []*Line
 }
 
 func NewMaze(seed int64) *Maze {
 	maze := &Maze{
 		rand:  rand.New(rand.NewSource(seed)),
 		cells: createCells(),
-		path:  []*Cell{},
 	}
 
 	maze.breakWalls(0, 0)
@@ -35,13 +35,24 @@ func (m *Maze) Draw() {
 	}
 }
 
-func (m *Maze) Solve() []*Cell {
-	m.solveR(m.cells[0][0])
-	return m.path
+func (m *Maze) Solve() ([]*Cell, []*Line) {
+	if m.path != nil && m.explored != nil {
+		return m.path, m.explored
+	}
+
+	m.path = nil
+	m.explored = nil
+	m.resetVisited()
+	m.solveR(m.cells[0][0], nil)
+	return m.path, m.explored
 }
 
-func (m *Maze) solveR(cell *Cell) bool {
+func (m *Maze) solveR(cell *Cell, prevCell *Cell) bool {
 	cell.visited = true
+
+	if prevCell != nil {
+		m.explored = append(m.explored, NewLine(cell.center, prevCell.center))
+	}
 
 	// base case: are you at the end?
 	if cell.id.x == NumCols-1 && cell.id.y == NumRows-1 {
@@ -49,14 +60,14 @@ func (m *Maze) solveR(cell *Cell) bool {
 		return true
 	}
 
+	// try any neighbor
 	for _, offset := range neighborOffsets {
 		x := cell.id.x + offset.x
 		y := cell.id.y + offset.y
 
 		neighbor := m.getCell(x, y)
 		if neighbor != nil && !neighbor.visited && cell.CanGoTo(neighbor) {
-
-			result := m.solveR(neighbor)
+			result := m.solveR(neighbor, cell)
 			if result {
 				m.path = append(m.path, cell)
 				return true
